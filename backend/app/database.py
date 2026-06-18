@@ -5,6 +5,13 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 # Load environment variable or default to SQLite database in the frontend/prisma folder
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///../frontend/prisma/dev.db")
 
+# Convert Prisma-style 'file:' URL to SQLAlchemy-compatible 'sqlite:///' URL
+if DATABASE_URL.startswith("file:"):
+    db_path = DATABASE_URL.replace("file:", "", 1)
+    # Ensure absolute path prefix formatting is correct
+    DATABASE_URL = f"sqlite:///{db_path}"
+
+
 # Handle differences between SQLite and PostgreSQL parameters
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):

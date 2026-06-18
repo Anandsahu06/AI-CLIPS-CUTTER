@@ -4,6 +4,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
+ENV DATABASE_URL="file:/app/frontend/prisma/dev.db"
 RUN npx prisma generate
 ENV NEXT_PUBLIC_API_URL=/api
 RUN npm run build
@@ -47,7 +48,7 @@ RUN chmod +x /app/start.sh
 EXPOSE 10000
 
 # Set environment variables
-ENV DATABASE_URL="sqlite:////app/frontend/prisma/dev.db"
+ENV DATABASE_URL="file:/app/frontend/prisma/dev.db"
 ENV CELERY_BROKER_URL="sqla+sqlite:////app/frontend/prisma/celery.db"
 ENV CELERY_RESULT_BACKEND="db+sqlite:////app/frontend/prisma/celery_results.db"
 ENV PORT=10000
