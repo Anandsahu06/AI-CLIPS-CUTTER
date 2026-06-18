@@ -22,7 +22,7 @@ CELERY_PID=$!
 # 4. Start Next.js Frontend (localhost only, proxied by Nginx)
 echo "Starting Next.js frontend server..."
 cd /app/frontend
-npm run start &
+npx next start -p 3000 &
 FRONTEND_PID=$!
 
 # 5. Start Nginx reverse proxy (exposes port 10000 to Render)

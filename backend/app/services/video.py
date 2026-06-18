@@ -153,21 +153,21 @@ def get_video_dimensions(video_path: str) -> tuple:
         ffprobe_path = "ffprobe"
     
     try:
-            cmd = [
-                ffprobe_path,
-                "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "stream=width,height",
-                "-of", "csv=s=x:p=0",
-                video_path
-            ]
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            if result.returncode == 0:
-                parts = result.stdout.strip().split("x")
-                if len(parts) >= 2:
-                    return int(parts[0]), int(parts[1])
-        except Exception:
-            pass
+        cmd = [
+            ffprobe_path,
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=s=x:p=0",
+            video_path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            parts = result.stdout.strip().split("x")
+            if len(parts) >= 2:
+                return int(parts[0]), int(parts[1])
+    except Exception:
+        pass
             
     return 1920, 1080
 
