@@ -1,0 +1,49 @@
+# Node.js
+node_modules/
+.next/
+out/
+build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+frontend/prisma/dev.db
+frontend/prisma/celery.db
+frontend/prisma/celery_results.db
+
+# Config / Environment secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env
+backend/.env
+
+# Application local media & binaries (extremely important to ignore to keep push size tiny)
+backend/media/
+backend/bin/
+bin/
+media/
+downloads/
+
+# OS files
+.DS_Store
+Thumbs.db

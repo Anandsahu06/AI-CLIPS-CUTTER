@@ -1,0 +1,96 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER")
+  createdAt     DateTime  @default(now())
+  projects      Project[]
+
+  @@map("users")
+}
+
+model Project {
+  id               String   @id @default(uuid())
+  name             String
+  videoUrl         String?
+  videoPath        String?
+  audioPath        String?
+  transcript       String?  // JSON string containing Whisper result
+  originalDuration Float?
+  status           String   @default("PENDING") // PENDING, DOWNLOADING, TRANSCRIBING, ANALYZING, COMPLETED, FAILED
+  error            String?
+  progress         Int      @default(0)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clips            Clip[]
+  createdAt        DateTime @default(now())
+
+  @@map("projects")
+}
+
+model Clip {
+  id               String      @id @default(uuid())
+  projectId        String
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title            String
+  start            Float
+  end              Float
+  duration         Float
+  score            Int         @default(0)
+  reason           String?
+  videoPath        String?
+  thumbnailPath    String?
+  status           String      @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  titleSuggestions String?     // JSON list of 20 titles
+  description      String?     // Video description
+  hashtags         String?     // Comma separated hashtags
+  metadata_json    String?     // JSON string containing detailed subscores
+  hook_text        String?     // Text overlay hook
+  viral_caption    String?     // Viral text caption
+  subtitles_path   String?     // Path to ASS subtitles
+  createdAt        DateTime    @default(now())
+  analytics        Analytics[]
+
+  @@map("clips")
+}
+
+model SubtitleTheme {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  fontName     String   @default("Arial")
+  fontSize     Int      @default(24)
+  primaryColor String   @default("&H00FFFFFF") // ASS BGR color
+  outlineColor String   @default("&H00000000") // ASS BGR outline
+  karaokeColor String   @default("&H0000FFFF") // ASS BGR highlight
+  shadowColor  String   @default("&H00000000")
+  outlineWidth Float    @default(2.0)
+  uppercase    Boolean  @default(true)
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@map("subtitle_themes")
+}
+
+model Analytics {
+  id           String   @id @default(uuid())
+  clipId       String
+  clip         Clip     @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  views        Int      @default(0)
+  shares       Int      @default(0)
+  platforms    String?  // JSON string of export channels
+  downloadedAt DateTime @default(now())
+
+  @@map("analytics")
+}

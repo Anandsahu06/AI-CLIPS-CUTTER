@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: clipforge_postgres
+    environment:
+      POSTGRES_USER: clipforge
+      POSTGRES_PASSWORD: clipforgepassword
+      POSTGRES_DB: clipforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - clipforge_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: clipforge_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - clipforge_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: clipforge_backend
+    environment:
+      - DATABASE_URL=postgresql://clipforge:clipforgepassword@postgres:5432/clipforge
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - STORAGE_TYPE=local
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_media:/app/media
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - clipforge_net
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: clipforge_worker
+    command: celery -A app.celery_app.celery_app worker --loglevel=info -P solo
+    environment:
+      - DATABASE_URL=postgresql://clipforge:clipforgepassword@postgres:5432/clipforge
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - STORAGE_TYPE=local
+    volumes:
+      - ./backend:/app
+      - backend_media:/app/media
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    networks:
+      - clipforge_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: clipforge_frontend
+    environment:
+      - DATABASE_URL=postgresql://clipforge:clipforgepassword@postgres:5432/clipforge
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - backend
+    networks:
+      - clipforge_net
+
+volumes:
+  postgres_data:
+  backend_media:
+
+networks:
+  clipforge_net:
