@@ -36,6 +36,14 @@ if BIN_DIR not in os.environ.get("PATH", ""):
 def get_ydl_opts(base_opts: dict) -> dict:
     import tempfile
     opts = base_opts.copy()
+    
+    # Enable player client spoofing (iOS/Android) to bypass bot-checks on datacenter IPs
+    opts["extractor_args"] = {
+        "youtube": {
+            "player_client": "ios,android"
+        }
+    }
+    
     cookies_content = os.getenv("YOUTUBE_COOKIES")
     if cookies_content:
         temp_dir = tempfile.gettempdir()
