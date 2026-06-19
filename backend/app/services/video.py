@@ -33,6 +33,22 @@ if not os.path.exists(FFMPEG_PATH):
 if BIN_DIR not in os.environ.get("PATH", ""):
     os.environ["PATH"] = BIN_DIR + os.pathsep + os.environ.get("PATH", "")
 
+def get_ydl_opts(base_opts: dict) -> dict:
+    import tempfile
+    opts = base_opts.copy()
+    cookies_content = os.getenv("YOUTUBE_COOKIES")
+    if cookies_content:
+        temp_dir = tempfile.gettempdir()
+        temp_cookies_path = os.path.join(temp_dir, "youtube_cookies.txt")
+        try:
+            with open(temp_cookies_path, "w", encoding="utf-8") as f:
+                f.write(cookies_content.strip() + "\n")
+            opts["cookiefile"] = temp_cookies_path
+            logger.info(f"Using YouTube cookies from YOUTUBE_COOKIES env. Saved to: {temp_cookies_path}")
+        except Exception as e:
+            logger.error(f"Failed to write YOUTUBE_COOKIES to file: {e}")
+    return opts
+
 def download_youtube_video(url: str, output_dir: str) -> dict:
     """
     Downloads the highest quality video (up to 1080p) from YouTube using yt-dlp.
@@ -42,14 +58,14 @@ def download_youtube_video(url: str, output_dir: str) -> dict:
     
     ffmpeg_dir = os.path.dirname(FFMPEG_PATH)
     # We want merged video/audio, preferably mp4 container, capped at 1080p
-    ydl_opts = {
+    ydl_opts = get_ydl_opts({
         "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "outtmpl": os.path.join(output_dir, "%(id)s.%(ext)s"),
         "merge_output_format": "mp4",
         "quiet": True,
         "no_warnings": True,
         "ffmpeg_location": ffmpeg_dir
-    }
+    })
     
     logger.info(f"Downloading YouTube video: {url}")
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -175,11 +191,11 @@ def get_youtube_video_info(url: str) -> dict:
     """
     Extracts video info using yt-dlp without downloading.
     """
-    ydl_opts = {
+    ydl_opts = get_ydl_opts({
         "quiet": True,
         "no_warnings": True,
         "ffmpeg_location": os.path.dirname(FFMPEG_PATH)
-    }
+    })
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         video_id = info.get("id", "")
@@ -247,11 +263,11 @@ def download_specific_format(url: str, format_id: str, type: str, output_dir: st
     # 1. Fetch info first to get video ID and perform cache check
     video_id = None
     try:
-        ydl_opts_info = {
+        ydl_opts_info = get_ydl_opts({
             "quiet": True,
             "no_warnings": True,
             "ffmpeg_location": ffmpeg_dir
-        }
+        })
         with yt_dlp.YoutubeDL(ydl_opts_info) as ydl:
             info = ydl.extract_info(url, download=False)
             video_id = info.get("id")
@@ -274,7 +290,7 @@ def download_specific_format(url: str, format_id: str, type: str, output_dir: st
                 
         # 2. Setup options for actual download
         if type == "audio":
-            ydl_opts = {
+            ydl_opts = get_ydl_opts({
                 "format": "bestaudio/best",
                 "outtmpl": os.path.join(output_dir, "%(id)s_audio.%(ext)s"),
                 "postprocessors": [{
@@ -286,10 +302,10 @@ def download_specific_format(url: str, format_id: str, type: str, output_dir: st
                 "quiet": True,
                 "no_warnings": True,
                 "overwrites": True
-            }
+            })
         else:
             # If format_id is specified, download that format and merge with bestaudio
-            ydl_opts = {
+            ydl_opts = get_ydl_opts({
                 "format": f"{format_id}+bestaudio/best",
                 "outtmpl": os.path.join(output_dir, f"%(id)s_{format_id}.%(ext)s"),
                 "merge_output_format": "mp4",
@@ -297,7 +313,7 @@ def download_specific_format(url: str, format_id: str, type: str, output_dir: st
                 "quiet": True,
                 "no_warnings": True,
                 "overwrites": True
-            }
+            })
             
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
